@@ -1,5 +1,6 @@
 {#
- Copyright 2020 Jo-Philipp Wich <jo@mein.io>
+ Copyright 2008 Steven Barth <steven@midlink.org>
+ Copyright 2008-2010 Jo-Philipp Wich <jow@openwrt.org>
  Licensed to the public under the Apache License 2.0.
 -#}
 
@@ -7,6 +8,7 @@
 	import { getuid, getspnam } from 'luci.core';
 
 	const boardinfo = ubus.call('system', 'board');
+	const loadinfo =  ubus.call("system", "info")?.load;
 
 	http.prepare_content('text/html; charset=UTF-8');
 -%}
@@ -15,18 +17,19 @@
 <html lang="{{ dispatcher.lang }}">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta http-equiv="Content-Script-Type" content="text/javascript" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
 <link rel="stylesheet" type="text/css" media="screen" href="{{ media }}/cascade.css" />
-<link rel="icon" href="{{ media }}/logo.png" sizes="180x180">
-<link rel="icon" href="{{ media }}/logo.svg" sizes="any">
+{% if (node?.css): %}
+<link rel="stylesheet" type="text/css" media="screen" href="{{ resource }}/{{ node.css }}" />
+{% endif %}
+{% if (css): %}
+<style type="text/css">{{ css }}</style>
+{% endif %}
 <script type="text/javascript" src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
 <script type="text/javascript" src="{{ resource }}/cbi.js"></script>
-<title>{{ striptags(`${boardinfo.hostname ?? '?'}${node ? ` - ${node.title}` : ''}`) }} - LuCI</title>
-{% if (css): %}
-<style title="text/css">{{ css }}</style>
-{% endif %}
+
+<title>{{ striptags(`${boardinfo.hostname ?? '?'}${node ? ` - ${_(node.title)}` : ''}`) }} - LuCI</title>
 </head>
 <body class="lang_{{ dispatcher.lang }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
 
@@ -36,19 +39,33 @@
 </p>
 
 <div id="menubar">
-	<h2 class="navigation"><a id="navigation" name="navigation">{{ _('Navigation') }}</a></h2>
+<h2 class="navigation"><a id="navigation" name="navigation">{{ _('Navigation') }}</a></h2>
 
-	<span class="hostname"><a href="/">{{ striptags(boardinfo.hostname ?? '?') }}</a></span>
-	<span class="distversion">{{ version.distversion }} {{ version.distrevision }}</span>
-	<span id="indicators"></span>
+<div class="hostinfo">
+	{{ striptags(boardinfo.hostname ?? '?') }} | {{ version.distversion }} |
+	{{ _('Load') }}: {{ loadinfo ? join(' ', map(loadinfo, load => sprintf("%.2f", load / 65535.0))) : '-' }}
 </div>
 
-<div id="modemenu" style="display:none"></div>
+<div id="indicators"></div>
+
+<ul id="modemenu" style="display:none"></ul>
+
+<div class="clear"></div>
+</div>
 
 <div id="maincontainer">
-	<div id="mainmenu"></div>
+	<div id="mainmenu" style="display:none"></div>
 
 	<div id="maincontent">
+		<div id="tabmenu" style="display:none"></div>
+
+		<noscript>
+			<div class="alert-message warning">
+				<h4>{{ _('JavaScript required!') }}</h4>
+				<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+			</div>
+		</noscript>
+
 		{% if (getuid() == 0 && getspnam('root')?.pwdp === '' && join('-', ctx.request_path) != 'admin-system-admin'): %}
 		<div class="alert-message warning">
 			<h4>{{ _('No password set!') }}</h4>
@@ -68,5 +85,3 @@
 			{% endif %}
 		</div>
 		{% endif %}
-
-		<div id="tabmenu" style="display:none"></div>
