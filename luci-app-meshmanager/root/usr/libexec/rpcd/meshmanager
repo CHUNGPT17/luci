@@ -1,0 +1,22 @@
+#!/bin/sh
+case "$1" in
+ list) echo '{"status":{},"nodes":{},"clients":{},"history":{},"radios":{},"sync_status":{},"apply":{},"sync":{"node":""},"discover":{},"restart":{},"smart_tick":{}}';;
+ call)
+   case "$2" in
+    status) /etc/meshmanager/status.sh;;
+    nodes) cat /tmp/meshmanager/nodes.json 2>/dev/null || echo '[]';;
+    clients) /etc/meshmanager/clients.sh;;
+    history) /etc/meshmanager/history.sh json;;
+    radios) /etc/meshmanager/radios.sh;;
+    sync_status) /etc/meshmanager/sync-status.sh;;
+    apply)
+      /etc/meshmanager/apply.sh >/dev/null 2>&1
+      [ "$(uci -q get meshmanager.main.role)" = controller ] && /etc/meshmanager/controller.sh publish >/dev/null 2>&1
+      echo '{"ok":true}'
+      ;;
+    sync) /etc/meshmanager/controller.sh sync >/dev/null 2>&1; echo '{"ok":true}';;
+    discover) /etc/meshmanager/controller.sh discover >/dev/null 2>&1; echo '{"ok":true}';;
+    restart) /etc/init.d/meshmanager restart >/dev/null 2>&1; echo '{"ok":true}';;
+    smart_tick) /etc/meshmanager/smart-roaming.sh tick >/dev/null 2>&1; echo '{"ok":true}';;
+   esac;;
+esac

@@ -1,0 +1,5 @@
+#!/bin/sh
+. /etc/meshmanager/lib.sh
+echo 'Content-Type: application/json'; echo 'Cache-Control: no-store'; echo
+[ "${HTTP_X_MESH_TOKEN:-}" = "$(mm_token)" ] || { echo '{"error":"unauthorized"}'; exit 0; }
+/etc/meshmanager/export.sh
