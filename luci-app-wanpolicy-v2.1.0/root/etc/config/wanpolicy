@@ -1,0 +1,9 @@
+config global 'global'
+	option enabled '1'
+	option pbr_resolver_set 'dnsmasq.nftset'
+	option strict_enforcement '0'
+	option log_level '1'
+
+# No interface is hard-coded here.
+# Create policies and watchdogs from LuCI. Interface selectors are populated
+# dynamically from logical interfaces currently configured in /etc/config/network.
