@@ -1,0 +1,48 @@
+#!/bin/sh
+. /etc/meshmanager/lib.sh
+. /usr/share/libubox/jshn.sh
+printf 'Content-Type: application/json\r\nCache-Control: no-store\r\n\r\n'
+[ "${HTTP_X_MESH_TOKEN:-}" = "$(mm_token)" ] || { echo '{"error":"unauthorized"}'; exit 0; }
+body="$(cat)"
+json_load "$body" >/dev/null 2>&1 || { echo '{"error":"invalid_json"}'; exit 0; }
+json_get_var node id
+json_get_var name name
+json_get_var ip ip
+json_get_var ver version
+[ -n "$node" ] || { echo '{"error":"missing_node"}'; exit 0; }
+case "$node" in *[!A-Za-z0-9_-]*) echo '{"error":"bad_node"}'; exit 0;; esac
+mkdir -p /tmp/meshmanager/nodes /tmp/meshmanager/client-node
+now="$(date +%s)"
+# Add authoritative Controller receive time to the Agent status object.
+record="$(printf '%s' "$body" | sed "s/}[[:space:]]*$/,\\\"last_seen\\\":$now}/")"
+printf '%s\n' "$record" > "/tmp/meshmanager/nodes/$node.json"
+# Observe real AP transitions by comparing client->node ownership between heartbeats.
+json_select clients 2>/dev/null
+json_get_keys keys
+for k in $keys; do
+	json_select "$k" || continue
+	json_get_var mac mac
+	json_get_var sig signal
+	json_select ..
+	[ -n "$mac" ] || continue
+	key="$(printf '%s' "$mac" | tr 'A-F:' 'a-f_')"
+	map="/tmp/meshmanager/client-node/$key"
+	oldnode=""; oldsig=-127
+	if [ -f "$map" ]; then IFS='|' read -r oldnode oldsig < "$map"; fi
+	if [ -n "$oldnode" ] && [ "$oldnode" != "$node" ]; then
+		/etc/meshmanager/history.sh add "$now|$mac|$oldnode|$node|${oldsig:--127}|${sig:--127}"
+	fi
+	printf '%s|%s\n' "$node" "${sig:--127}" > "$map"
+done
+json_select .. 2>/dev/null
+# Rebuild aggregate node list atomically.
+tmp=/tmp/meshmanager/nodes.json.tmp
+printf '[' > "$tmp"; first=1
+for f in /tmp/meshmanager/nodes/*.json; do
+	[ -e "$f" ] || continue
+	[ $first -eq 1 ] || printf ',' >> "$tmp"; first=0
+	cat "$f" >> "$tmp"
+done
+printf ']\n' >> "$tmp"
+mv "$tmp" /tmp/meshmanager/nodes.json
+echo '{"ok":true}'

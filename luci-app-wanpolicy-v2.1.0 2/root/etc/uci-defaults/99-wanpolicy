@@ -1,0 +1,7 @@
+#!/bin/sh
+uci -q set pbr.config.enabled='1'
+uci -q set pbr.config.resolver_set='dnsmasq.nftset'
+uci -q set pbr.config.strict_enforcement='0'
+uci -q commit pbr
+/etc/init.d/wanpolicy enable >/dev/null 2>&1
+exit 0
