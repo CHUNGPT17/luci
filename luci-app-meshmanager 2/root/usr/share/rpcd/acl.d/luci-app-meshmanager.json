@@ -1,7 +1,0 @@
-{
-  "luci-app-meshmanager": {
-    "description":"Grant access to Mesh Manager",
-    "read":{"uci":["meshmanager","wireless"],"ubus":{"meshmanager":["status","nodes","clients","history","radios","sync_status"]}},
-    "write":{"uci":["meshmanager","wireless"],"ubus":{"meshmanager":["apply","sync","discover","restart","smart_tick"]}}
-  }
-}
