@@ -1,3 +1,0 @@
-'use strict';
-'require view';'require form';'require uci';
-return view.extend({load:function(){return uci.load('meshmanager');},render:function(){var m=new form.Map('meshmanager',_('Mesh Backhaul'));var s=m.section(form.NamedSection,'backhaul','mesh');s.anonymous=true;var o=s.option(form.Flag,'enabled',_('Kích hoạt'));o=s.option(form.ListValue,'mode',_('Chế độ'));o.value('hybrid','Hybrid - ưu tiên Ethernet');o.value('ethernet','Ethernet only');o.value('wireless','Wireless Mesh only');o=s.option(form.Value,'mesh_id',_('Mesh ID'));o=s.option(form.Value,'key',_('Mật khẩu Mesh'));o.password=true;o=s.option(form.ListValue,'band',_('Backhaul Band'));o.value('5g','5GHz');o.value('2g','2.4GHz');o=s.option(form.Flag,'reconnect',_('Tự kết nối lại'));return m.render();}});
